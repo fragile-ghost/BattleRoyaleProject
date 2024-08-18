@@ -1,8 +1,10 @@
 from asyncio.windows_events import NULL
 import random, csv
+import tomllib
 from operator import attrgetter
 
-
+with open("config.toml", "rb") as file:
+    config = tomllib.load(file)
     
 #Specify character profiles
 class Player:
@@ -26,15 +28,14 @@ class Location:
     def populate(self, player):
         self.populus.append(player)
 
-    def kick(self, victim):
-        self.populus.remove(victim)
+    def kick(self, victims: list):
+        self.populus.remove(victims)
+
+    def __repr__(self):
+        return f'{self.name}'
     
 class BattleRoyale:
     def __init__(self):
-        self.roster = []
-        self.live_roster = []
-        self.max_pop_size = 0
-        self.locations = []
         self.killcount = [1,2,3,4]
         
     def csv_import(self, filename='BR.csv'):
@@ -45,7 +46,10 @@ class BattleRoyale:
                 next(reader)
                 rows = list(reader)
                 self.roster = [Player(col[0], col[1]) for col in rows]
-                self.locations = [Location(col[2]) for col in rows if col[2]]
+                if config['drops']:
+                    self.locations = [Location(col[2]) for col in rows if col[2]]
+                else:
+                    self.locations = [col[2] for col in rows if col[2]]
             except Exception:
                 print(f"Error {Exception} has occured. Please ensure that the spreadsheet is formatted correctly.")
                 exit(1)
@@ -62,21 +66,25 @@ class BattleRoyale:
             assignment = random.choice(self.locations)
             assignment.populate(player)
 
-    def initialize_game(self):
-        if not self.roster:
-            self.csv_import()
-        if input_check("Would you like alliances?"):
-            pass
-        if input_check("Would you like random drops?"):
-            self.drops_generator()
-
     def select_location(self):
         """Selects, displays, and then removes one of the locations, if any"""
         if self.locations: 
             place = random.choice(self.locations)
-            print (f"-- {place} --")
+            print (f"-- {place.name} --")
             self.locations.remove(place)
         
+    def kill(self, player: Player, location = NULL):
+        """Kills a player or group of players by removing them from any valid lists"""
+        self.live_roster.remove(player)
+        if location.populus:
+            location.populus.remove(player)
+
+    def kill(self, players: list, location = NULL):
+        """Kills a player or group of players by removing them from any valid lists"""
+        self.live_roster.remove(players)
+        if self.drops_bool:
+            location.kick(players)
+
     def round_loop(self,round_length=1):
         """Create a single round loop. Default length is 5 events"""
         self.select_location()
@@ -124,12 +132,5 @@ class BattleRoyale:
 
         exit(0)
             
-def input_check(prompt="Default Prompt? Y/N"):
-    """Validates user responses and converts to bool"""
-    while True:
-        setting = input(f'{prompt} (Y/N)\n').strip().upper()
-        if setting not in ('Y','N'):
-            print(f'Invalid input. Please try again.')
-            continue
-        else:
-            return setting == "Y"
+br = BattleRoyale()
+br.csv_import()
