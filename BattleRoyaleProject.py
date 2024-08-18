@@ -14,7 +14,20 @@ class Player:
     
     def __repr__(self):
         return f'{self.name}'
-    
+
+
+#Create location objects to hold and manage players
+class Location:
+    def __init__(self, name):
+        self.name = name
+        self.populus = []
+        self.num_population = NULL
+
+    def populate(self, player):
+        self.populus.append(player)
+
+    def kick(self, victim):
+        self.populus.remove(victim)
     
 class BattleRoyale:
     def __init__(self):
@@ -22,10 +35,9 @@ class BattleRoyale:
         self.live_roster = []
         self.max_pop_size = 0
         self.locations = []
-        self.victims = [1,2,3,4]
-        self.ally_bool = input_check("Would you like alliances?")
+        self.killcount = [1,2,3,4]
         
-    def make_roster(self, filename='BR.csv'):
+    def csv_import(self, filename='BR.csv'):
         """Uses spreadsheet to import players, districts, and locations. Default is BR.csv"""
         with open(filename, 'r', newline='') as file:
             try:
@@ -33,7 +45,7 @@ class BattleRoyale:
                 next(reader)
                 rows = list(reader)
                 self.roster = [Player(col[0], col[1]) for col in rows]
-                self.locations = [col[2] for col in rows if col[2]]
+                self.locations = [Location(col[2]) for col in rows if col[2]]
             except Exception:
                 print(f"Error {Exception} has occured. Please ensure that the spreadsheet is formatted correctly.")
                 exit(1)
@@ -43,8 +55,21 @@ class BattleRoyale:
         self.live_roster = self.roster.copy()
         if self.locations:
             print(f'Number of locations: {len(self.locations)}')
-        print ("Beginning battle!!")
-            
+    
+    def drops_generator(self):
+        """Randomly assigns each player an index corresponding to a starting location"""
+        for player in self.roster:
+            assignment = random.choice(self.locations)
+            assignment.populate(player)
+
+    def initialize_game(self):
+        if not self.roster:
+            self.csv_import()
+        if input_check("Would you like alliances?"):
+            pass
+        if input_check("Would you like random drops?"):
+            self.drops_generator()
+
     def select_location(self):
         """Selects, displays, and then removes one of the locations, if any"""
         if self.locations: 
@@ -52,7 +77,7 @@ class BattleRoyale:
             print (f"-- {place} --")
             self.locations.remove(place)
         
-    def round_loop(self,round_length=5):
+    def round_loop(self,round_length=1):
         """Create a single round loop. Default length is 5 events"""
         self.select_location()
         for event in range(round_length):
@@ -65,7 +90,7 @@ class BattleRoyale:
                                
             # Determines the number of victims            
             kill_chance = [1, 0.5, (pop_size / self.max_pop_size), (pop_size / (2*self.max_pop_size))]
-            num_killed = random.choices(self.victims, weights=(kill_chance), k=1)[0]
+            num_killed = random.choices(self.killcount, weights=(kill_chance), k=1)[0]
         
             # Failsafe in case the number of victims selected is more than the number of living contestants
             if num_killed >= pop_size:
@@ -99,7 +124,7 @@ class BattleRoyale:
 
         exit(0)
             
-def input_check(prompt="Default Prompt?"):
+def input_check(prompt="Default Prompt? Y/N"):
     """Validates user responses and converts to bool"""
     while True:
         setting = input(f'{prompt} (Y/N)\n').strip().upper()
@@ -108,8 +133,3 @@ def input_check(prompt="Default Prompt?"):
             continue
         else:
             return setting == "Y"
-        
-br = BattleRoyale()
-br.make_roster()
-while True:
-    br.round_loop()
