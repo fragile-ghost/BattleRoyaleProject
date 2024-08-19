@@ -36,7 +36,7 @@ class Location:
     
 class BattleRoyale:
     def __init__(self):
-        self.killcount = [1,2,3,4]
+
         
     def csv_import(self, filename='BR.csv'):
         """Uses spreadsheet to import players, districts, and locations. Default is BR.csv"""
@@ -131,6 +131,6 @@ class BattleRoyale:
             print(f'{place}. {player.name} -- {player.kills} kill(s)!')
 
         exit(0)
-            
+
 br = BattleRoyale()
 br.csv_import()
