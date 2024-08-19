@@ -7,6 +7,9 @@ from operator import attrgetter
 with open("config.toml", "rb") as file:
     config = tomllib.load(file)
     
+with open("config.toml", "rb") as file:
+    config = tomllib.load(file)
+    
 #Specify character profiles
 class Player:
     def __init__(self, name, district):
