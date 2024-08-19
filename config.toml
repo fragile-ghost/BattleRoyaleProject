@@ -1,4 +1,3 @@
-allies = false
+max-fight-kills = 4
 drops = false
-self-kill = false
 epic-mode = false
