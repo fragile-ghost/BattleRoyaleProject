@@ -5,6 +5,11 @@ VisualStudioVersion = 17.10.35013.160
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "BattleRoyaleProject", "BattleRoyaleProject.pyproj", "{23A76449-BCDC-470D-9EE5-A3595B3315E9}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F4835178-1EF6-4361-A2EB-025983499FC6}"
+	ProjectSection(SolutionItems) = preProject
+		config.toml = config.toml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
