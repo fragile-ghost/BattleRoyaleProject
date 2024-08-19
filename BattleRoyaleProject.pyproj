@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>23a76449-bcdc-470d-9ee5-a3595b3315e9</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>BattleRoyaleProjectBeta.py</StartupFile>
+    <StartupFile>BattleRoyaleProject.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>

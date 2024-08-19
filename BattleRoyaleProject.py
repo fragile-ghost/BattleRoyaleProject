@@ -23,7 +23,6 @@ class BattleRoyale:
         self.max_pop_size = 0
         self.locations = []
         self.victims = [1,2,3,4]
-        self.ally_bool = input_check("Would you like alliances?")
         
     def make_roster(self, filename='BR.csv'):
         """Uses spreadsheet to import players, districts, and locations. Default is BR.csv"""
@@ -98,17 +97,7 @@ class BattleRoyale:
             print(f'{place}. {player.name} -- {player.kills} kill(s)!')
 
         exit(0)
-            
-def input_check(prompt="Default Prompt?"):
-    """Validates user responses and converts to bool"""
-    while True:
-        setting = input(f'{prompt} (Y/N)\n').strip().upper()
-        if setting not in ('Y','N'):
-            print(f'Invalid input. Please try again.')
-            continue
-        else:
-            return setting == "Y"
-        
+     
 br = BattleRoyale()
 br.make_roster()
 while True:
