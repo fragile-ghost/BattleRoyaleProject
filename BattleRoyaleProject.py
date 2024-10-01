@@ -47,80 +47,92 @@ class BattleRoyale:
         
     def game_initialize(self, filename='BR.csv'):
         """Uses spreadsheet to import players, districts, and locations. Default is BR.csv"""
-        with open(filename, 'r', newline='') as file:
-            try:
-                # Opens and reads the spreadsheet
+        try:
+            # Opens and reads the spreadsheet
+            with open(filename, 'r', newline='') as file:
                 reader = csv.reader(file, delimiter=',')
                 next(reader)
                 rows = list(reader)
-                print('Spreadhseet Detected...')
+                print('Spreadsheet Detected...')
 
-                # Constructs the playerbase and related data
-                self.roster = [Player(col[0], col[1]) for col in rows]
-                self.max_pop_size = len(self.roster)
-                self.live_roster = self.roster.copy()
-                print(f'Population of {self.max_pop_size} detected...')
+            # Constructs the playerbase and related data
+            self.roster = [Player(col[0], col[1]) for col in rows]
+            self.max_pop_size = len(self.roster)
+            self.live_roster = self.roster.copy()
+            print(f'Population of {self.max_pop_size} detected...')
 
-                # Constructs the locations and related data
-                self.locations = [Location(col[2]) for col in rows if col[2]]
-                if config["drops"] and not self.locations:
-                    print("Why did you turn drops on with no locations, silly? \n Disabling drops...")
-                    config["drops"] = False
-                if self.locations:
-                    self.loc_ratio = self.max_pop_size / len(self.locations)
-                    print(f'Number of locations: {len(self.locations)}')
+            # Constructs the locations and related data
+            self.locations = [Location(col[2]) for col in rows if col[2]]
+            if config["drops"] and not self.locations:
+                print("Why did you turn drops on with no locations, silly? \n Disabling drops...")
+                config["drops"] = False
 
-                    # Randomly assigns each player a list corresponding to a starting location, then mass populates each location
-                    if config["drops"]:
-                        random.shuffle(self.locations)
-                        location_assignments = [[] for location in self.locations]
-                        for player in self.roster:
-                            location_assignments[random.randrange(len(self.locations))].append(player)
-                        for location, assignment in zip(self.locations, location_assignments):
-                            location.populate(assignment)
+            if not self.locations:
+                return
 
-                    # Create and announce the first loaction
-                    self.current_loc = random.choice(self.locations)
-                    print (f"-- {self.current_loc}: Population {self.current_loc.num_population} --")
-                    self.locations.remove(self.current_loc)
-            except Exception as e:
-                print(f"Error, {str(e)} has occured. Please ensure that the spreadsheet is formatted correctly.")
-                exit(1)
+            self.loc_ratio = self.max_pop_size / len(self.locations)
+            print(f'Number of locations: {len(self.locations)}')
+
+            # Randomly assigns each player a list corresponding to a starting location, then mass populates each location
+            if config["drops"]:
+                random.shuffle(self.locations)
+                location_assignments = [[] for location in self.locations]
+                for player in self.roster:
+                    location_assignments[random.randrange(len(self.locations))].append(player)
+                for location, assignment in zip(self.locations, location_assignments):
+                    location.populate(assignment)
+
+        except Exception as e:
+            print(f"Error, {str(e)} has occured. Please ensure that the spreadsheet is formatted correctly.")
+            exit(1)
              
     def select_location(self):
         """Selects, displays, and then removes one of the locations, if any"""
+
         # Check if drops are on and that a location was selected
-        while config["drops"]:
-
-            #Store players left in previous location for use in the last location
-            if self.current_loc.num_population <=1:
-                transfer = self.current_loc.populus
-                self.current_loc.kick(transfer)
-                self.travel_players.extend(transfer)
-
-                # Create and announce a new location
-                self.current_loc = random.choice(self.locations)
-                # Check to see if this is the last location for a final showdown
-                if len(self.locations) == 1:
-                    self.current_loc.populate(self.travel_players)
-                self.locations.remove(self.current_loc)
-                print(f'{len(self.live_roster)} remain.')
-                print (f"-- {self.current_loc}: Population {self.current_loc.num_population} --")
+        if config["drops"]:
+            while True:
+                if not self.current_loc:
+                    self._new_location()
 
                 # Check to ensure an empty location is not selected for battle
                 if self.current_loc.num_population == 0:
                     print("Looks like nobody is here...\nOh well...")
                     self.locations.remove(self.current_loc)
+                    self.current_loc = NULL;
                     continue
-            break
+
+                # Check if there are no longer players in the area
+                if self.current_loc.num_population == 1:
+                    self._transfer_players()
+                    self._new_location()
+
+                break
                 
         # Big scary formula that evenly "distributes" players to locations when drops are off
-        if not config["drops"] and len(self.live_roster) <= math.floor(self.loc_ratio * len(self.locations)):
-            # Create and announce a new loaction
-            self.current_loc = random.choice(self.locations)
-            self.locations.remove(self.current_loc)
-            print(f'{len(self.live_roster)} remain.')
+        elif len(self.live_roster) <= math.floor(self.loc_ratio * len(self.locations)):
+            self._new_location()
+
+    def _new_location(self):
+        '''Create and announce a new location'''
+        print(f'{len(self.live_roster)} remain.')
+        self.current_loc = random.choice(self.locations)
+        self.locations.remove(self.current_loc)
+
+        # Check to see if this is the last location for a final showdown
+        if len(self.locations) == 0:
+            self.current_loc.populate(self.travel_players)
+            print(f"Everyone makes their way to the final showdown \n...")
+        if config["drops"]:
             print (f"-- {self.current_loc}: Population {self.current_loc.num_population} --")
+        else:
+            print (f"-- {self.current_loc} --")
+
+    def _transfer_players(self):
+        '''Store players left in previous location for use in the last location'''
+        transfer = self.current_loc.populus
+        self.current_loc.kick(transfer)
+        self.travel_players.extend(transfer)
 
     def kill(self, dead: list):
         """Kills a player or group of players by removing them from the roster and location"""
@@ -162,12 +174,11 @@ class BattleRoyale:
                     print(f'{player.name} [{player.kills} kills]',end=', ')
                     griddier.kills+=1
             print(f' died to {griddier} when they hit the griddy!')
-            self.live_roster.append(griddier)
+            self.live_roster[0] = griddier
             self.leaderboard()
         else:
             print(f'{griddier} hit the griddy and died.')
             
-
     def round_loop(self):
         """Create a single round loop."""
         # Check the current size of the population
