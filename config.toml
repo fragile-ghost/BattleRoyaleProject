@@ -1,4 +1,11 @@
+["file-addresses"]
+br-path = "BR.csv"
+extras-path = "extras.csv"
+
+["settings"]
 max-fight-kills = 4
-drops = false
+max-alliance-size = 4
+max-movements = 3
+ban-alliances-at = 25
 allies = true
-epic-mode = false
+emotes = false
