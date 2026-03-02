@@ -1,3 +1,4 @@
 max-fight-kills = 4
 drops = false
+allies = true
 epic-mode = false
