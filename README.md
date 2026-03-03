@@ -1,13 +1,14 @@
 # BattleRoyaleProject
-Baby's first code project...
-
-This is just a fun code project I have had for myself since I was 12. I have worked on it off and on and iterated on it to improve the functionailty.
+Project that randomly distributes players to locations. Currently, players have the ability to fight or form alliances. More features will be added in the future.
 
 # How to Use
-BR.csv (which comes preloaded with my friends current submissions) is read until a gap is detected. Next to each player submission, you must put their district. The third column is optional, and is for any locations that you want used in the game.
+Specify the csv and extras path in the config file, as well as a few basic settings. 
+For an example of the csv format, the file including my friends' submissions are included.
+
+> Note:
+Apology if any of the submissions are crass or offensive.
 
 ### To DO
-- Implementing locations that contain their players, preventing players from killing eachother from across the map
-- Implementing allies and teams that work together (or betray eachother)
-- Adding user costumization outside of editing the code arguments
-- Exporting the script to a .txt file
+- Implement a full simulation that animates the sequences
+- Add more powers or events
+- Add a storm or other location pressure

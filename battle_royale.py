@@ -3,6 +3,7 @@ from typing import Callable
 from operator import attrgetter
 import random, csv
 import tomllib
+import json
     
 @dataclass
 class Player:
@@ -66,11 +67,10 @@ class BattleRoyale:
         self.MAX_MOVEMENTS = self.config["settings"]["max-movements"]
         self.BAN_ALLIANCES_AT = self.config["settings"]["ban-alliances-at"]
         self.can_ally = True
-        self.output = ""
+        self.output = []
         self.round = 0
         self.num_alliances = 1
-        self._alliance_table = {
-        }
+        self._alliance_table = {}
         self.EVENT_LIST = self._generate_events()
         self.event_weights = [event.weight for event in self.EVENT_LIST]
         
@@ -109,7 +109,7 @@ class BattleRoyale:
             players = list(self.base_location.population)
             for player in players:
                 if player.alive:
-                    print(f'{player} has won the game!')
+                    self.output.append({"event":"winner", "player":player.name})
                     break
         # self._leaderboard(players)
 
@@ -124,10 +124,10 @@ class BattleRoyale:
         for player in self.base_location.population:
             location = random.choice(self.locations)
             location.population.add(player)
+            self.output.append({"action":"drop", "player":player.name, "destination":location.name})
     
     def _event_fight(self, location):
         # Choose some number of players from that location
-        output = ""
         if self.MAX_FIGHT_KILLS >= len(location.population):
             fight_kills = random.randint(1, len(location.population)-1)
         else:
@@ -136,32 +136,30 @@ class BattleRoyale:
 
         # Fight logic
         killer = random.choice(fight_players)
+        fight_players.remove(killer)
         betrayal = True
-        output += f'{killer.name} kills '
         if killer.alliance and self.can_ally:
             killer_current_alliance = self._alliance_table[killer.alliance]
         else:
             killer_current_alliance = []
         for player in fight_players:
-            if player is not killer:
-                if player in killer_current_alliance and betrayal:
-                    output+= f'and betrays their ALLY {player.name}, '
-                    self._alliance_table[killer.alliance].remove(killer)
-                    killer.alliance = None
-                if player not in killer_current_alliance:
-                    if betrayal:
-                        betrayal = False 
-                    output += f'{player.name}, '
-                else:
-                    continue
-                player.alive = False
-                self.living_players -= 1
-                killer.kills += 1
-                location.population.remove(player)
+            if player in killer_current_alliance and betrayal:
+                self._alliance_table[killer.alliance].remove(killer)
+                killer.alliance = None
+            if player not in killer_current_alliance:
+                if betrayal:
+                    betrayal = False 
+            else:
+                fight_players.remove(player)
+                continue
+            player.alive = False
+            self.living_players -= 1
+            killer.kills += 1
+            location.population.remove(player)
 
-        if output == f'{killer.name} kills ':
-            pass
-        print(output)
+        fight_player_names = [player.name for player in fight_players]
+        self.output.append({"action":"fight","location":location.name, "killer":killer.name, "victims":fight_player_names})
+
     
     def _event_alliance(self, location):
         # Remove dead players from alliances
@@ -175,42 +173,37 @@ class BattleRoyale:
                 alliance.pop()
         self._alliance_table = {k: v for k, v in self._alliance_table.items() if v}
 
-        output = ""
-
         # Determine if an alliance will form or break
         alliance_break = random.randint(0,3)
         num_population = len(location.population)
 
         # Alliance logic
+        player_names = []
         if alliance_break == 3 and len(self._alliance_table) > 0:
-            output += "The alliance between "
             broken_id = random.choice(list(self._alliance_table.keys()))
             for player in self._alliance_table[broken_id]:
                 player.alliance = None
-                output+= f'{player.name}, '
+                player_names.append(player.name)
             self._alliance_table.pop(broken_id)
-            output += "has ended!!"
+            self.output.append({"action":"alliance_break", "alliance_members":player_names})
         elif num_population > 1:
             if self.MAX_ALLIANCE_SIZE > num_population:
                 alliance_size = random.randint(2,num_population)
             else:
                 alliance_size = random.randint(2, self.MAX_ALLIANCE_SIZE)
             new_alliance = random.sample(list(location.population), k=alliance_size)
-            output+="An alliance between "
             for player in new_alliance:
                 if player.alliance:
                     self._alliance_table[player.alliance].remove(player)
-                output += f'{player.name}, '
                 player.alliance = self.num_alliances
+                player_names.append(player.name)
             self._alliance_table[self.num_alliances] = new_alliance
-            output += "has formed!!"
+            self.output.append({"action":"alliance_form", "alliance_members":player_names})
             self.num_alliances+=1
-        
-        print(output)
     
     def _event_flavor(self, location):
         player = random.choice(list(location.population))
-        print(player.name + " flavor text.")
+        self.output.append({"action":"flavor", "location":location.name, "player":player.name})
 
     def _movement_step(self):
         for location in self.locations:
@@ -227,16 +220,25 @@ class BattleRoyale:
                     while new_location == location:
                         new_location = random.choice(self.locations)
                     new_location.population.add(player)
+                    self.output.append({"action":"move", "start_location":location.name, "destination":new_location.name,
+                                        "player":player.name})
             if len(location.population) == 1:
                     player = location.population.pop()
                     self.locations.remove(location)
-                    print(f'{location} has been removed.')
+                    self.output.append({"action":"close_location", "location":location.name})
                     random.choice(self.locations).population.add(player)
             elif len(location.population) < 1:
                 self.locations.remove(location)
-                print(f'{location} has been removed.')                
+                self.output.append({"action":"close_location", "location":location.name})
 
     def _leaderboard(self, players: list):
         players.sort(key=attrgetter("kills"), reverse=True)
         for index, player in enumerate(players):
             print(f'{index+1} -- {player.name}: {player.kills} kills.')
+
+    
+br = BattleRoyale()
+br.play()
+with open('output.json', 'w', encoding='utf-8') as output:
+    json.dump(br.output, output, ensure_ascii=False)
+print("Output file to output.json.")
