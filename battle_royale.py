@@ -1,9 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Callable
 from operator import attrgetter
-import random, csv
-import tomllib
-import json
+import random, csv, json, tomllib
     
 @dataclass
 class Player:
@@ -38,7 +36,7 @@ class BattleRoyale:
 
         # All players are stored to the base location
         self.base_location = Location("base")
-        
+
         # Ensure all files can be opened
         try:
             with open("config.toml", 'rb') as config_file:
@@ -125,11 +123,13 @@ class BattleRoyale:
         events.append(Event("flavor",self._event_flavor, weight=1))
         return events
     
-    def _populate_locations(self):
+    def _populate_locations(self):        
+        self.output.append({"action":"keyframe"})
         for player in self.base_location.population:
             location = random.choice(self.locations)
             location.population.add(player)
-            self.output.append({"action":"drop", "player":player.name, "destination":location.name})
+        for location in self.locations:
+            self.output.append({"action":"drop", "location":location, "players":[player.name for player in location.population]})
     
     def _event_fight(self, location):
         # Choose some number of players from that location
@@ -159,8 +159,8 @@ class BattleRoyale:
             killer.kills += 1
             location.population.remove(player)
 
-        fight_player_names = [player.name for player in fight_players]
-        self.output.append({"action":"fight","location":location.name, "killer":killer.name, "victims":fight_player_names})
+        self.output.append({"action":"fight","location":location.name, 
+                            "killer":killer.name, "victims":[player.name for player in fight_players]})
 
     
     def _event_alliance(self, location):
@@ -244,4 +244,8 @@ br = BattleRoyale()
 br.play()
 with open('output.json', 'w', encoding='utf-8') as output:
     json.dump(br.output, output, ensure_ascii=False)
-    print("Output file to output.json.")
+
+print("Output file to output.json.")
+# print("Generating game instructions: ")
+# builder = sim.instruction_builder()
+# builder.build(filepath='output.json')
